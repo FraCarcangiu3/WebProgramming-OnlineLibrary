@@ -1,0 +1,539 @@
+/* === DEFINIZIONE VARIABILI CSS ===
+   Le variabili CSS permettono di definire valori che possono 
+   essere riutilizzati in tutto il foglio di stile */
+:root {
+    --blu-primario: #3498db;   /* Colore primario per pulsanti e accenti */
+    --blu-scuro: #2c3e50;      /* Colore secondario per header e titoli */
+    --rosso: #e74c3c;          /* Colore per azioni pericolose (es. eliminazione) */
+    --colore-testo: #333;      /* Colore principale del testo */
+    --sfondo-chiaro: #f9f9f9;  /* Colore di sfondo della pagina */
+    --bianco: #ffffff;         /* Colore bianco per elementi in primo piano */
+    --ombra: 0 2px 8px rgba(0, 0, 0, 0.1);  /* Effetto ombra per gli elementi */
+    --bordo-arrotondato: 8px;  /* Raggio per angoli arrotondati */
+}
+
+/* === RESET DEGLI STILI PREDEFINITI DEL BROWSER ===
+   Rimuove margini e spaziature predefinite per garantire coerenza tra i browser */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;  /* Fa sì che padding e bordi siano inclusi nelle dimensioni */
+}
+
+/* === STILE DEL CORPO DELLA PAGINA === */
+body {
+    font-family: Arial, Helvetica, sans-serif;  /* Font sans-serif per migliore leggibilità */
+    line-height: 1.6;  /* Altezza linea del testo per migliorare la leggibilità */
+    color: var(--colore-testo);  /* Colore principale del testo */
+    background-color: var(--sfondo-chiaro);  /* Colore di sfondo della pagina */
+    padding-bottom: 2rem;  /* Spaziatura inferiore della pagina */
+}
+
+/* === STILE DELL'HEADER === */
+header {
+    background-color: var(--blu-scuro);  /* Colore di sfondo dell'header */
+    color: var(--bianco);  /* Colore del testo nell'header */
+    text-align: center;  /* Allineamento centrato del testo */
+    padding: 1.5rem 0;  /* Spaziatura interna sopra e sotto */
+    margin-bottom: 2rem;  /* Spaziatura sotto l'header */
+    box-shadow: var(--ombra);  /* Effetto ombra per profondità */
+    position: relative;  /* Per posizionare il switch del tema */
+}
+
+/* Titolo principale nell'header */
+h1 {
+    font-size: 2.5rem;  /* Dimensione del font del titolo principale */
+    margin-bottom: 0.5rem;  /* Spaziatura sotto il titolo */
+}
+
+/* Sottotitolo nell'header */
+.subtitle {
+    font-size: 1.2rem;  /* Dimensione del font del sottotitolo */
+}
+
+/* === CONTENITORE PRINCIPALE ===
+   Limita la larghezza del contenuto e lo centra nella pagina */
+.container {
+    max-width: 1200px;  /* Larghezza massima del contenuto */
+    margin: 0 auto;  /* Centra il contenitore orizzontalmente */
+    padding: 0 1.5rem;  /* Spaziatura interna laterale */
+}
+
+/* === STILE DELLE SEZIONI === */
+section {
+    background-color: var(--bianco);  /* Sfondo bianco per le sezioni */
+    border-radius: var(--bordo-arrotondato);  /* Angoli arrotondati */
+    box-shadow: var(--ombra);  /* Effetto ombra per profondità */
+    padding: 1.5rem;  /* Spaziatura interna */
+    margin-bottom: 2rem;  /* Spaziatura sotto la sezione */
+}
+
+/* Titolo della sezione con linea divisoria */
+.section-title {
+    color: var(--blu-scuro);  /* Colore del testo del titolo */
+    border-bottom: 2px solid var(--blu-primario);  /* Linea divisoria sotto il titolo */
+    padding-bottom: 0.5rem;  /* Spaziatura sotto il titolo */
+    margin-bottom: 1.5rem;  /* Margine sotto il titolo */
+    display: flex;  /* Layout flessibile per allineare gli elementi */
+    justify-content: space-between;  /* Distribuisce lo spazio tra titolo e pulsanti */
+    align-items: center;  /* Allinea verticalmente gli elementi */
+}
+
+/* Pulsanti nel titolo della sezione */
+.section-title button {
+    font-size: 0.85rem;  /* Dimensione del font dei pulsanti */
+}
+
+/* === STILE DELLA TABELLA LIBRI === */
+table {
+    width: 100%;  /* Occupa tutta la larghezza disponibile */
+    border-collapse: collapse;  /* Unisce i bordi adiacenti della tabella */
+    margin-bottom: 1.5rem;  /* Spaziatura sotto la tabella */
+}
+
+/* Celle dell'intestazione e dei dati */
+th, td {
+    padding: 0.75rem;  /* Spaziatura interna delle celle */
+    text-align: left;  /* Allineamento a sinistra del testo */
+    border-bottom: 1px solid #e0e0e0;  /* Linea divisoria sotto ogni riga */
+}
+
+/* Celle dell'intestazione */
+th {
+    background-color: #f2f8fd;  /* Colore di sfondo per le intestazioni */
+    font-weight: bold;  /* Testo in grassetto */
+}
+
+/* Effetto hover sulle righe della tabella */
+tr:hover {
+    background-color: #f5f5f5;  /* Cambia colore quando il mouse passa sopra */
+}
+
+/* Contenitore per i pulsanti di azione nella tabella */
+.azioni-libro {
+    display: flex;  /* Layout flessibile per i pulsanti */
+    gap: 0.5rem;  /* Spazio tra i pulsanti */
+}
+
+/* === STILE DELLE RECENSIONI === */
+/* Stelle delle recensioni */
+.stelle {
+    color: #ffc107;  /* Colore giallo per le stelle (recensioni) */
+    font-size: 1.2rem;  /* Dimensione delle stelle */
+}
+
+/* Stile per quando non c'è recensione */
+.no-recensione {
+    color: #ccc;  /* Colore grigio chiaro */
+    font-style: italic;  /* Testo in corsivo */
+}
+
+/* === STILE DEI FORM === */
+form {
+    display: grid;  /* Layout a griglia per organizzare i campi del form */
+    grid-template-columns: 1fr 1fr;  /* Due colonne di uguale larghezza */
+    gap: 1rem;  /* Spazio tra gli elementi del form */
+}
+
+/* Elementi che dovrebbero occupare l'intera larghezza del form */
+form .full-width {
+    grid-column: 1 / -1;  /* Dalla prima all'ultima colonna */
+}
+
+/* Etichette dei campi del form */
+label {
+    display: block;  /* Rende le etichette elementi a blocco (uno sotto l'altro) */
+    font-weight: bold;  /* Testo in grassetto */
+    margin-bottom: 0.3rem;  /* Spazio sotto l'etichetta */
+    color: var(--blu-scuro);  /* Colore del testo */
+}
+
+/* Campi di input e select */
+input, select {
+    width: 100%;  /* Occupa tutta la larghezza disponibile */
+    padding: 0.7rem;  /* Spaziatura interna */
+    border: 1px solid #ddd;  /* Bordo sottile grigio */
+    border-radius: var(--bordo-arrotondato);  /* Angoli arrotondati */
+    font-size: 1rem;  /* Dimensione del testo */
+}
+
+/* Stile per i campi quando hanno il focus (sono selezionati) */
+input:focus, select:focus {
+    border-color: var(--blu-primario);  /* Cambia colore del bordo */
+    outline: none;  /* Rimuove il contorno predefinito del browser */
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);  /* Aggiunge un'ombra sottile */
+}
+
+/* === STILE DEI PULSANTI === */
+button {
+    padding: 0.7rem 1.2rem;  /* Spaziatura interna */
+    background-color: var(--blu-primario);  /* Colore di sfondo */
+    color: var(--bianco);  /* Colore del testo */
+    border: none;  /* Rimuove il bordo */
+    border-radius: var(--bordo-arrotondato);  /* Angoli arrotondati */
+    cursor: pointer;  /* Cambia cursore quando passa sopra */
+    font-weight: bold;  /* Testo in grassetto */
+}
+
+/* Effetto hover sui pulsanti */
+button:hover {
+    background-color: #2980b9;  /* Colore più scuro quando il mouse passa sopra */
+}
+
+/* Pulsanti secondari (meno importanti) */
+button.secondary {
+    background-color: #95a5a6;  /* Colore di sfondo grigio */
+}
+
+button.secondary:hover {
+    background-color: #7f8c8d;  /* Colore più scuro quando il mouse passa sopra */
+}
+
+/* Pulsanti di eliminazione (azioni pericolose) */
+button.elimina {
+    background-color: var(--rosso);  /* Colore di sfondo rosso */
+}
+
+button.elimina:hover {
+    background-color: #c0392b;  /* Colore più scuro quando il mouse passa sopra */
+}
+
+/* === SISTEMA DI VALUTAZIONE A STELLE === */
+.valutazione {
+    display: flex;  /* Layout flessibile per le stelle */
+    gap: 0.3rem;  /* Spazio tra le stelle */
+}
+
+.stella {
+    cursor: pointer;  /* Cambia cursore quando passa sopra */
+    font-size: 1.5rem;  /* Dimensione delle stelle */
+    color: #ddd;  /* Colore grigio chiaro (stelle inattive) */
+}
+
+.stella.attiva, .stella:hover {
+    color: #ffc107;  /* Colore giallo (stelle attive o hover) */
+}
+
+/* Messaggio di avviso */
+.alert {
+    padding: 1rem;
+    border-radius: var(--bordo-arrotondato);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.alert.successo {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert.errore {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Switch tema */
+.tema-switch {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 100;
+}
+
+.tema-switch label {
+    margin-right: 0.5rem;
+    cursor: pointer;
+    color: var(--bianco);
+    font-weight: bold;
+    user-select: none; /* Impedisce la selezione del testo */
+}
+
+.tema-toggle {
+    position: relative;
+    display: inline-block;
+    width: 56px; /* Aumentata la larghezza */
+    height: 28px; /* Aumentata l'altezza */
+}
+
+.tema-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.2); /* Ombra interna */
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px; /* Aumentata la dimensione */
+    width: 20px; /* Aumentata la dimensione */
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+    box-shadow: 0 0 3px rgba(0,0,0,0.3); /* Ombra per effetto 3D */
+}
+
+.slider:hover:before {
+    box-shadow: 0 0 5px rgba(0,0,0,0.5); /* Ombra più pronunciata al passaggio del mouse */
+}
+
+input:checked + .slider {
+    background-color: var(--blu-primario);
+}
+
+input:checked + .slider:before {
+    transform: translateX(28px); /* Aggiustata la distanza di spostamento */
+}
+
+/* Stile del footer */
+footer {
+    background-color: var(--blu-scuro);
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+    padding: 1rem 0;
+    margin-top: 2rem;
+}
+
+/* === MEDIA QUERIES PER RESPONSIVE DESIGN === */
+
+/* Schermi extra-large (desktop) */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1140px;
+    }
+}
+
+/* Schermi grandi (desktop/laptop) */
+@media (max-width: 1199px) and (min-width: 992px) {
+    .container {
+        max-width: 960px;
+    }
+}
+
+/* Schermi medi (tablet) */
+@media (max-width: 991px) and (min-width: 768px) {
+    .container {
+        max-width: 720px;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    .subtitle {
+        font-size: 1rem;
+    }
+    
+    .section-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .section-title div {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+}
+
+/* Schermi piccoli (mobile landscape) */
+@media (max-width: 767px) and (min-width: 576px) {
+    .container {
+        max-width: 540px;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+    }
+    
+    .subtitle {
+        font-size: 0.9rem;
+    }
+    
+    section {
+        padding: 1rem;
+    }
+    
+    .section-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.8rem;
+    }
+    
+    .section-title div {
+        display: flex;
+        gap: 0.5rem;
+        width: 100%;
+    }
+    
+    table {
+        font-size: 0.9rem;
+    }
+    
+    th, td {
+        padding: 0.6rem;
+    }
+    
+    form {
+        grid-template-columns: 1fr;
+    }
+    
+    .azioni-libro {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .azioni-libro button {
+        width: 100%;
+    }
+}
+
+/* Schermi molto piccoli (mobile portrait) */
+@media (max-width: 575px) {
+    body {
+        padding-bottom: 1rem;
+    }
+    
+    .container {
+        padding: 0 1rem;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    .subtitle {
+        font-size: 0.8rem;
+    }
+    
+    section {
+        padding: 0.8rem;
+        margin-bottom: 1.5rem;
+        border-radius: 5px;
+    }
+    
+    .section-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.8rem;
+        margin-bottom: 1rem;
+    }
+    
+    .section-title h2 {
+        font-size: 1.3rem;
+    }
+    
+    .section-title div {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+    }
+    
+    .section-title button {
+        width: 100%;
+        padding: 0.6rem 1rem;
+    }
+    
+    /* Tabella responsive */
+    table {
+        font-size: 0.8rem;
+    }
+    
+    /* Nascondi alcune colonne su mobile */
+    .hide-on-mobile {
+        display: none;
+    }
+    
+    /* Collassa la tabella su mobile */
+    table, thead, tbody, th, td, tr {
+        display: block;
+    }
+    
+    thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+    
+    tr {
+        margin-bottom: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    td {
+        border: none;
+        border-bottom: 1px solid #eee;
+        position: relative;
+        padding-left: 50%;
+        text-align: right;
+    }
+    
+    td:before {
+        position: absolute;
+        left: 0.6rem;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        font-weight: bold;
+        text-align: left;
+    }
+    
+    /* Etichette per ogni cella */
+    td:nth-of-type(1):before { content: "ID"; }
+    td:nth-of-type(2):before { content: "Titolo"; }
+    td:nth-of-type(3):before { content: "Autore"; }
+    td:nth-of-type(4):before { content: "Recensione"; }
+    td:nth-of-type(5):before { content: "Azioni"; }
+    
+    .azioni-libro {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .azioni-libro button {
+        width: 100%;
+    }
+    
+    form {
+        grid-template-columns: 1fr;
+        gap: 0.8rem;
+    }
+    
+    .alert {
+        padding: 0.8rem;
+        font-size: 0.9rem;
+    }
+    
+    /* Stile del tema switch su mobile */
+    .tema-switch {
+        top: 0.5rem;
+        right: 0.5rem;
+    }
+    
+    .tema-switch label {
+        display: none;
+    }
+} 
