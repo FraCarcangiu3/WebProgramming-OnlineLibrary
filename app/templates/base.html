@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <title>Library</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}"> <!-- url_for genera l'url per il file css -->
+</head>
+<body>
+  <header>
+    <h1>Online Library</h1>
+    <p>A simple application example</p>
+  </header>
+  <nav>
+    <a href="/">Home</a>
+    <a href="{{ url_for('show_book_list') }}">Book List</a> <!-- url_for genera l'url per la funzione show_book_list -->
+    <a href="/">Add Book</a>
+  </nav>
+  <div class="container">
+    {% block content %} {% endblock %} <!-- Sto dicendo che qui ci sarà il contenuto specifico delle pagine che estendono questo template -->
+
+  </div>
+  <footer>
+    <p>&copy; 2025 Programmazione Web UNICA</p>
+  </footer>
+  </header>
+</body>
+</html>
