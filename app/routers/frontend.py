@@ -45,8 +45,14 @@ def home(request: Request):
 @router.get("/book_list", response_class=HTMLResponse)
 def show_book_list(request: Request):
     # Renderizza il template list.html, passando l'oggetto request come parametro
-    context = {"books": list(books.values())}
+    context = {"books": list(books.values())} # Passa la lista dei libri come variabile al template
     return templates.TemplateResponse(
         request=request, name="list.html",
         context=context # Passa l'oggetto
     )
+
+@router.get("/add_book", response_class=HTMLResponse)
+def add_book_form(request: Request):
+    # Renderizza il template add_book.html, passando l'oggetto request come parametro
+    return templates.TemplateResponse(
+        request=request, name="add.html",    )

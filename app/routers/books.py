@@ -15,7 +15,7 @@ from data.books import books
 # - APIRouter: Permette di organizzare le rotte in gruppi logici
 # - HTTPException: Per generare errori HTTP significativi
 # - Path: Per validare e documentare i parametri di percorso
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, HTTPException, Path, Form, Query
 # ValidationError: Per gestire errori di validazione dei dati inviati
 from pydantic import ValidationError
 # Annotated: Per aggiungere metadati ai tipi (usato per documentazione e validazione)
@@ -127,3 +127,21 @@ def delete_book(
     except KeyError:
         # Se il libro non esiste, genera un errore 404
         raise HTTPException(status_code=404, detail="Libro non trovato")
+
+
+
+@router.post("books_form/")
+def add_book_from_form(
+    book: Annotated[Book, Form()]
+):
+    """
+    Aggiunge un nuovo libro alla collezione
+    """
+    # Verifica se esiste già un libro con lo stesso ID
+    if book.id in books:
+        # Se esiste, genera un errore 403 (Forbidden)
+        raise HTTPException(status_code=403, detail="Esiste già un libro con questo ID")
+
+    # Altrimenti, aggiunge il libro al dizionario
+    books[book.id] = book
+    return "Libro aggiunto con successo"
