@@ -133,6 +133,8 @@ def delete_book(
 @router.post("books_form/")
 def add_book_from_form(
     book: Annotated[Book, Form()]
+    # Utilizza Form per estrarre i dati dal corpo della richiesta,
+    # Form() è un helper di FastAPI che permette di estrarre i dati da un form HTML
 ):
     """
     Aggiunge un nuovo libro alla collezione
