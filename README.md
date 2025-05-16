@@ -1,4 +1,4 @@
-# Laboratorio di Programmazione Web - Libreria Online: Guida Passo dopo Passo
+#  Libreria Online: Guida Passo dopo Passo
 
 Benvenuto al corso introduttivo di Programmazione Web! 📚 Questa guida completa ti insegnerà come costruire da zero un'applicazione web per gestire una libreria online. Il progetto è pensato appositamente per principianti che vogliono imparare le basi dello sviluppo web moderno.
 
