@@ -1,4 +1,4 @@
-#  Libreria Online: Guida Passo dopo Passo
+# Laboratorio di Programmazione Web - Libreria Online: Guida Passo dopo Passo
 
 Benvenuto al corso introduttivo di Programmazione Web! 📚 Questa guida completa ti insegnerà come costruire da zero un'applicazione web per gestire una libreria online. Il progetto è pensato appositamente per principianti che vogliono imparare le basi dello sviluppo web moderno.
 
@@ -16,19 +16,26 @@ Benvenuto al corso introduttivo di Programmazione Web! 📚 Questa guida complet
    - [Database SQLite](#database-sqlite)
    - [API RESTful](#api-approutersbookspy)
    - [Punto di ingresso](#punto-di-ingresso-appmainpy)
+6. [Guida completa al database](#guida-completa-al-database)
+   - [Concetti fondamentali dei database](#concetti-fondamentali-dei-database)
+   - [SQLModel e SQLAlchemy](#sqlmodel-e-sqlalchemy)
+   - [Creazione del database](#creazione-del-database)
+   - [Operazioni CRUD sul database](#operazioni-crud-sul-database)
+   - [Relazioni tra tabelle](#relazioni-tra-tabelle)
+   - [Migrazioni del database](#migrazioni-del-database)
 
 ### Parte 2: Il Frontend (Client)
-6. [Front-end: HTML, CSS e JavaScript](#front-end-con-html-css-e-javascript)
+7. [Front-end: HTML, CSS e JavaScript](#front-end-con-html-css-e-javascript)
    - [HTML: La struttura](#html-apptemplateshomelhtml)
    - [CSS: Lo stile](#css-appstaticcssfilecss)
    - [JavaScript: Il comportamento](#javascript-appstaticjsmainjs)
-7. [Separazione delle preoccupazioni](#separazione-delle-preoccupazioni-una-best-practice)
+8. [Separazione delle preoccupazioni](#separazione-delle-preoccupazioni-una-best-practice)
 
 ### Parte 3: Integrazione e Utilizzo
-8. [API e comunicazione client-server](#api-e-comunicazione-client-server)
-9. [Come eseguire l'applicazione](#come-eseguire-lapplicazione)
-10. [Esercizi proposti](#esercizi-proposti)
-11. [Guida alla risoluzione dei problemi comuni](#guida-alla-risoluzione-dei-problemi-comuni)
+9. [API e comunicazione client-server](#api-e-comunicazione-client-server)
+10. [Come eseguire l'applicazione](#come-eseguire-lapplicazione)
+11. [Esercizi proposti](#esercizi-proposti)
+12. [Guida alla risoluzione dei problemi comuni](#guida-alla-risoluzione-dei-problemi-comuni)
 
 ## Introduzione e obiettivi
 
@@ -363,6 +370,628 @@ Questo file:
 3. Integra i router per le API dei libri e per il frontend
 4. Configura il sistema per servire i file statici (CSS e JavaScript)
 5. Avvia il server quando il file viene eseguito direttamente
+
+## Guida completa al database
+
+Questa sezione fornisce una guida dettagliata su come implementare e utilizzare un database in un'applicazione web. Ti spiegheremo tutto ciò che devi sapere per creare la tua web app con database SQLite e SQLModel.
+
+### Concetti fondamentali dei database
+
+Prima di immergerci nei dettagli tecnici, è importante comprendere alcuni concetti fondamentali dei database:
+
+#### 1. Cos'è un database?
+
+Un database è un sistema organizzato per la memorizzazione, gestione e recupero di dati. Nel contesto delle applicazioni web, il database conserva le informazioni che l'applicazione utilizza (ad esempio, i libri nella nostra libreria online).
+
+#### 2. Tipi di database
+
+Esistono diversi tipi di database:
+- **Database relazionali** (come SQLite, PostgreSQL, MySQL): organizzano i dati in tabelle con relazioni tra loro
+- **Database NoSQL** (come MongoDB, Cassandra): offrono schemi più flessibili per dati non strutturati
+- **Database in-memory** (come Redis): memorizzano i dati in RAM per accessi ad alta velocità
+
+In questo progetto utilizziamo **SQLite**, un database relazionale leggero archiviato in un singolo file, ideale per applicazioni di piccole e medie dimensioni.
+
+#### 3. Modelli di dati e ORM
+
+Un **Object-Relational Mapping (ORM)** è una tecnica che collega il database all'applicazione tramite "modelli" che rappresentano le tabelle del database come classi. Questo semplifica l'interazione con il database utilizzando il linguaggio di programmazione invece di scrivere direttamente SQL.
+
+In questo progetto utilizziamo **SQLModel**, un ORM che combina SQLAlchemy (per le operazioni database) e Pydantic (per la validazione dei dati).
+
+### SQLModel e SQLAlchemy
+
+SQLModel è una libreria che unisce il meglio di SQLAlchemy e Pydantic, fornendo:
+- Validazione dei dati (tramite Pydantic)
+- Mappatura oggetto-relazionale (tramite SQLAlchemy)
+- Supporto per tipizzazione moderna in Python
+
+#### Installazione
+
+Per utilizzare SQLModel, devi installarlo con pip:
+
+```bash
+pip install sqlmodel
+```
+
+#### Componenti principali di SQLModel
+
+1. **SQLModel**: La classe base per definire i modelli che diventano tabelle nel database
+2. **Field**: Per definire campi con caratteristiche speciali (chiavi primarie, valori predefiniti, ecc.)
+3. **Relationship**: Per definire relazioni tra diversi modelli
+4. **Session**: Per eseguire operazioni sul database
+5. **select**: Per creare query di selezione
+
+### Creazione del database
+
+Vediamo come implementare un database SQLite utilizzando SQLModel in un'applicazione FastAPI:
+
+#### 1. Definizione dei modelli
+
+I modelli rappresentano le tabelle del database. Ecco un esempio completo e commentato:
+
+```python
+# app/models/book.py
+from sqlmodel import Field, SQLModel
+from typing import Annotated, Optional, List
+
+# Modello base con i campi comuni
+class BookBase(SQLModel):
+    title: str  # Campo obbligatorio per il titolo
+    author: str  # Campo obbligatorio per l'autore
+    # Campo opzionale per la recensione con validazione (tra 1 e 5)
+    review: Annotated[Optional[int], Field(ge=1, le=5)] = None
+    # Puoi aggiungere altri campi come:
+    # year: Optional[int] = None
+    # genre: Optional[str] = None
+
+# Modello per la tabella del database (table=True lo rende una tabella)
+class Book(BookBase, table=True):
+    # Chiave primaria con auto-incremento (default=None)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Se volessimo aggiungere relazioni (ad esempio, con le recensioni):
+    # reviews: List["Review"] = Relationship(back_populates="book")
+
+# Modello per la creazione di nuovi libri (senza ID)
+class BookCreate(BookBase):
+    pass
+
+# Modello per restituire i dati pubblicamente (con ID)
+class BookPublic(BookBase):
+    id: int
+```
+
+#### 2. Configurazione del database
+
+La configurazione del database include la creazione del motore di database, le funzioni per le sessioni e l'inizializzazione:
+
+```python
+# app/data/db.py
+from sqlmodel import create_engine, SQLModel, Session
+from typing import Annotated
+from fastapi import Depends
+import os
+from models.book import Book
+
+# Percorso del file database
+sqlite_file_name = "app/data/database.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
+
+# Opzioni di connessione (check_same_thread=False permette l'uso in applicazioni web)
+connect_args = {"check_same_thread": False}
+
+# Creazione del motore del database
+# echo=True mostra le query SQL eseguite (utile per il debugging)
+engine = create_engine(sqlite_url, connect_args=connect_args, echo=True)
+
+# Funzione per inizializzare il database
+def init_database():
+    # Controlla se il file database esiste già
+    ds_exists = os.path.isfile(sqlite_file_name)
+    
+    # Crea le tabelle dal modello
+    SQLModel.metadata.create_all(engine)
+    
+    # Se il database non esisteva, popolalo con dati di esempio
+    if not ds_exists:
+        create_sample_data()
+
+# Funzione per creare dati di esempio
+def create_sample_data():
+    # Puoi usare la libreria Faker per generare dati realistici
+    from faker import Faker
+    f = Faker("it_IT")
+    
+    with Session(engine) as session:
+        for i in range(10):
+            book = Book(
+                title=f.sentence(nb_words=5), 
+                author=f.name(),
+                review=f.pyint(1, 5)
+            )
+            session.add(book)
+        session.commit()
+
+# Funzione per ottenere una sessione di database
+def get_session():
+    with Session(engine) as session:
+        yield session  # Yield rende questa funzione un generatore usabile come dipendenza FastAPI
+
+# Dependency injection per ottenere la sessione nelle API
+SessionDep = Annotated[Session, Depends(get_session)]
+```
+
+#### 3. Integrazione con FastAPI
+
+Per integrare il database con FastAPI, devi inizializzarlo all'avvio dell'applicazione:
+
+```python
+# app/main.py
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from data.db import init_database
+
+# Gestore del ciclo di vita per inizializzare il database all'avvio
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Codice eseguito all'avvio dell'applicazione
+    init_database()
+    yield
+    # Codice eseguito alla chiusura dell'applicazione (opzionale)
+    # Qui potresti aggiungere operazioni di pulizia se necessario
+
+# Crea l'applicazione FastAPI con il gestore del ciclo di vita
+app = FastAPI(lifespan=lifespan)
+
+# ... resto della configurazione dell'app ...
+```
+
+### Operazioni CRUD sul database
+
+Le operazioni CRUD (Create, Read, Update, Delete) sono le operazioni fondamentali per interagire con un database. Vediamo come implementarle con SQLModel:
+
+#### 1. Create (Creare)
+
+```python
+# In un router FastAPI (app/routers/books.py)
+@router.post("/")
+def add_book(book: BookCreate, session: SessionDep):
+    """Aggiunge un nuovo libro al database."""
+    # Converti il modello di creazione nel modello di database
+    db_book = Book.model_validate(book)
+    
+    # Aggiungi alla sessione
+    session.add(db_book)
+    
+    # Salva i cambiamenti nel database
+    session.commit()
+    
+    # Aggiorna l'oggetto con i dati generati (come l'ID auto-incrementato)
+    session.refresh(db_book)
+    
+    return db_book
+```
+
+#### 2. Read (Leggere)
+
+```python
+# Leggere tutti i record
+@router.get("/")
+def get_all_books(session: SessionDep, skip: int = 0, limit: int = 100):
+    """Restituisce tutti i libri con paginazione opzionale."""
+    # Costruisci una query di selezione
+    statement = select(Book).offset(skip).limit(limit)
+    
+    # Esegui la query
+    books = session.exec(statement).all()
+    
+    return books
+
+# Leggere un record specifico
+@router.get("/{book_id}")
+def get_book(book_id: int, session: SessionDep):
+    """Restituisce un libro specifico tramite ID."""
+    # Ottieni il libro per ID
+    book = session.get(Book, book_id)
+    
+    # Gestione del caso in cui il libro non esiste
+    if not book:
+        raise HTTPException(status_code=404, detail="Libro non trovato")
+    
+    return book
+
+# Leggere con filtri
+@router.get("/search/")
+def search_books(
+    session: SessionDep, 
+    title: str = None, 
+    author: str = None,
+    min_review: int = None
+):
+    """Cerca libri con vari filtri."""
+    statement = select(Book)
+    
+    # Aggiungi filtri alla query se specificati
+    if title:
+        statement = statement.where(Book.title.contains(title))
+    if author:
+        statement = statement.where(Book.author.contains(author))
+    if min_review:
+        statement = statement.where(Book.review >= min_review)
+    
+    books = session.exec(statement).all()
+    return books
+```
+
+#### 3. Update (Aggiornare)
+
+```python
+@router.put("/{book_id}")
+def update_book(
+    book_id: int,
+    book_update: BookCreate,
+    session: SessionDep
+):
+    """Aggiorna un libro esistente."""
+    # Ottieni il libro esistente
+    db_book = session.get(Book, book_id)
+    if not db_book:
+        raise HTTPException(status_code=404, detail="Libro non trovato")
+    
+    # Aggiorna i campi con i nuovi valori
+    # Ottieni i dati come dizionario, escludendo None
+    book_data = book_update.model_dump(exclude_unset=True)
+    
+    # Aggiorna l'oggetto con i nuovi dati
+    for key, value in book_data.items():
+        setattr(db_book, key, value)
+    
+    # Salva i cambiamenti
+    session.add(db_book)
+    session.commit()
+    session.refresh(db_book)
+    
+    return db_book
+```
+
+#### 4. Delete (Eliminare)
+
+```python
+@router.delete("/{book_id}")
+def delete_book(book_id: int, session: SessionDep):
+    """Elimina un libro dal database."""
+    # Ottieni il libro
+    book = session.get(Book, book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Libro non trovato")
+    
+    # Elimina il libro
+    session.delete(book)
+    session.commit()
+    
+    return {"message": "Libro eliminato con successo"}
+```
+
+### Relazioni tra tabelle
+
+Un aspetto potente dei database relazionali è la capacità di creare relazioni tra tabelle. Ecco come implementare relazioni uno-a-molti e molti-a-molti con SQLModel:
+
+#### Relazione uno-a-molti (One-to-Many)
+
+Ad esempio, un libro può avere molte recensioni (un libro : molte recensioni):
+
+```python
+# Modello Recensione
+from sqlmodel import SQLModel, Field, Relationship
+from typing import Optional, List
+
+class Review(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    text: str
+    rating: int = Field(ge=1, le=5)
+    
+    # Chiave esterna che collega questa recensione a un libro
+    book_id: int = Field(foreign_key="book.id")
+    
+    # Relazione con il libro (per accesso facile nel codice Python)
+    book: "Book" = Relationship(back_populates="reviews")
+
+# Aggiornamento del modello Libro per includere la relazione
+class Book(BookBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Relazione con le recensioni
+    reviews: List[Review] = Relationship(back_populates="book")
+```
+
+#### Relazione molti-a-molti (Many-to-Many)
+
+Ad esempio, libri e autori (un libro può avere più autori, un autore può scrivere più libri):
+
+```python
+# Tabella di associazione (per relazioni molti-a-molti)
+class BookAuthorLink(SQLModel, table=True):
+    book_id: Optional[int] = Field(
+        default=None, foreign_key="book.id", primary_key=True
+    )
+    author_id: Optional[int] = Field(
+        default=None, foreign_key="author.id", primary_key=True
+    )
+
+class Author(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    
+    # Relazione molti-a-molti con libri
+    books: List["Book"] = Relationship(
+        back_populates="authors",
+        link_model=BookAuthorLink
+    )
+
+class Book(BookBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Relazione molti-a-molti con autori
+    authors: List[Author] = Relationship(
+        back_populates="books",
+        link_model=BookAuthorLink
+    )
+```
+
+### Migrazioni del database
+
+Le migrazioni sono un modo per gestire i cambiamenti nello schema del database nel tempo. Sebbene SQLModel non abbia un sistema di migrazione integrato, puoi utilizzare Alembic (compatibile con SQLAlchemy) per gestire le migrazioni.
+
+Ecco i passaggi di base per configurare Alembic:
+
+#### 1. Installazione di Alembic
+
+```bash
+pip install alembic
+```
+
+#### 2. Inizializzazione di Alembic
+
+```bash
+alembic init migrations
+```
+
+#### 3. Configurazione di Alembic
+
+Modifica il file `alembic.ini` per puntare al tuo database:
+
+```ini
+sqlalchemy.url = sqlite:///app/data/database.db
+```
+
+Modifica `migrations/env.py` per utilizzare i tuoi modelli SQLModel:
+
+```python
+from models.book import Book  # Importa tutti i tuoi modelli
+from sqlmodel import SQLModel
+
+# Aggiungi questa riga per target_metadata
+target_metadata = SQLModel.metadata
+```
+
+#### 4. Creazione di una migrazione
+
+```bash
+alembic revision --autogenerate -m "Descrizione della modifica"
+```
+
+#### 5. Applicazione della migrazione
+
+```bash
+alembic upgrade head
+```
+
+### Esempio pratico completo
+
+Supponiamo di voler creare una web app per una libreria con le seguenti funzionalità:
+- Gestione di libri, autori e recensioni
+- Ricerca di libri per titolo, autore o valutazione
+- Visualizzazione dettagliata dei libri con tutte le recensioni
+
+Ecco come implementare il database per questa applicazione:
+
+#### 1. Modelli dati (app/models)
+
+```python
+# models/author.py
+from sqlmodel import Field, SQLModel, Relationship
+from typing import Optional, List
+
+class Author(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    bio: Optional[str] = None
+    
+    # Relazione con i libri
+    books: List["Book"] = Relationship(back_populates="authors")
+
+# models/book.py
+from sqlmodel import Field, SQLModel, Relationship
+from typing import Optional, List
+
+class Book(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    
+    # Relazioni
+    authors: List["Author"] = Relationship(back_populates="books")
+    reviews: List["Review"] = Relationship(back_populates="book")
+
+# models/review.py
+from sqlmodel import Field, SQLModel, Relationship
+from typing import Optional
+
+class Review(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    text: str
+    rating: int = Field(ge=1, le=5)
+    
+    # Relazione con il libro
+    book_id: int = Field(foreign_key="book.id")
+    book: "Book" = Relationship(back_populates="reviews")
+```
+
+#### 2. Configurazione del database
+
+```python
+# data/db.py
+from sqlmodel import create_engine, SQLModel, Session
+from typing import Annotated
+from fastapi import Depends
+import os
+
+# Importa tutti i modelli per assicurarti che siano registrati
+from models.book import Book
+from models.author import Author
+from models.review import Review
+
+# Configurazione del database
+sqlite_file_name = "app/data/library.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
+connect_args = {"check_same_thread": False}
+engine = create_engine(sqlite_url, connect_args=connect_args, echo=True)
+
+def init_database():
+    os.makedirs(os.path.dirname(sqlite_file_name), exist_ok=True)
+    ds_exists = os.path.isfile(sqlite_file_name)
+    SQLModel.metadata.create_all(engine)
+    
+    if not ds_exists:
+        create_sample_data()
+
+def create_sample_data():
+    with Session(engine) as session:
+        # Crea autori
+        author1 = Author(name="J.K. Rowling", bio="Autrice di Harry Potter")
+        author2 = Author(name="George Orwell", bio="Autore di 1984")
+        
+        # Crea libri
+        book1 = Book(title="Harry Potter", year=1997, genre="Fantasy")
+        book2 = Book(title="1984", year=1949, genre="Distopia")
+        
+        # Collega libri e autori
+        book1.authors.append(author1)
+        book2.authors.append(author2)
+        
+        # Aggiungi al database
+        session.add(author1)
+        session.add(author2)
+        session.add(book1)
+        session.add(book2)
+        
+        # Aggiungi recensioni
+        review1 = Review(text="Fantastico!", rating=5, book_id=1)
+        review2 = Review(text="Un classico.", rating=4, book_id=2)
+        
+        session.add(review1)
+        session.add(review2)
+        
+        session.commit()
+
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+SessionDep = Annotated[Session, Depends(get_session)]
+```
+
+#### 3. API per il database
+
+```python
+# routers/books.py
+from fastapi import APIRouter, HTTPException, Query
+from sqlmodel import select, Session
+from typing import List
+
+from models.book import Book
+from models.review import Review
+from data.db import SessionDep
+
+router = APIRouter(prefix="/books")
+
+@router.get("/", response_model=List[Book])
+def get_books(
+    session: SessionDep,
+    skip: int = 0,
+    limit: int = 100,
+    title: str = None,
+    genre: str = None,
+    min_rating: float = None
+):
+    """Ottieni libri con filtri opzionali."""
+    query = select(Book)
+    
+    if title:
+        query = query.where(Book.title.contains(title))
+    if genre:
+        query = query.where(Book.genre == genre)
+    if min_rating:
+        # Query più complessa con sottoquery per rating medio
+        # Questa è una semplificazione
+        pass
+    
+    query = query.offset(skip).limit(limit)
+    books = session.exec(query).all()
+    return books
+
+@router.get("/{book_id}", response_model=Book)
+def get_book(book_id: int, session: SessionDep):
+    """Ottieni dettagli di un libro specifico."""
+    book = session.get(Book, book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Libro non trovato")
+    return book
+
+@router.post("/", response_model=Book)
+def create_book(book: Book, session: SessionDep):
+    """Crea un nuovo libro."""
+    session.add(book)
+    session.commit()
+    session.refresh(book)
+    return book
+
+@router.post("/{book_id}/reviews/", response_model=Review)
+def add_review(book_id: int, review: Review, session: SessionDep):
+    """Aggiungi una recensione a un libro."""
+    book = session.get(Book, book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Libro non trovato")
+    
+    review.book_id = book_id
+    session.add(review)
+    session.commit()
+    session.refresh(review)
+    return review
+```
+
+### Consigli per la progettazione del database
+
+1. **Pianifica prima lo schema**: Prima di iniziare a codificare, pianifica le tabelle e le relazioni tra loro.
+
+2. **Normalizza i dati**: Dividi i dati in tabelle logiche per evitare la ridondanza.
+
+3. **Usa chiavi primarie appropriate**: Ogni tabella dovrebbe avere una chiave primaria univoca.
+
+4. **Considera gli indici**: Aggiungi indici ai campi frequentemente cercati per migliorare le prestazioni.
+
+5. **Validazione a livello di modello**: Utilizza i vincoli di SQLModel per garantire la validità dei dati.
+
+6. **Migrazioni per i cambiamenti**: Usa Alembic per gestire i cambiamenti nello schema nel tempo.
+
+7. **Test con dati di esempio**: Crea dati di esempio realistici per testare l'applicazione.
+
+### Conclusione
+
+Con questa guida hai ora tutti gli strumenti necessari per implementare un database SQLite con SQLModel nella tua applicazione FastAPI. Puoi utilizzare questi concetti come base per costruire applicazioni web più complesse con database relazionali.
+
+Ricorda che questa è solo l'inizio: man mano che l'applicazione cresce, potresti voler esplorare database più robusti come PostgreSQL o MySQL, implementare caching con Redis, o aggiungere funzionalità di ricerca avanzate con Elasticsearch.
 
 ## Front-end con HTML, CSS e JavaScript
 
