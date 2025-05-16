@@ -3,10 +3,25 @@
 from fastapi import FastAPI
 from routers import books, frontend
 from fastapi.staticfiles import StaticFiles
+from data.db import init_database
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Funzione di gestione del ciclo di vita dell'applicazione.
+    Inizializza il database quando l'app viene avviata e lo chiude quando viene fermata.
+    """
+    init_database()
+    yield
+    
+    """
+    Funzione di chiusura del ciclo di vita dell'applicazione.
+    """
 
 
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)  # Crea un'istanza di FastAPI con la funzione di gestione del ciclo di vita
 app.include_router(books.router, tags=["Books"])
 app.include_router(frontend.router, tags=["Frontend"])
 

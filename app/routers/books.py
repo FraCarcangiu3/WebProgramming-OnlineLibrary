@@ -1,149 +1,111 @@
-# === FILE PER LA GESTIONE DELLE API DEI LIBRI ===
-# Questo file definisce tutte le rotte (endpoint) relative alla gestione dei libri
-# con percorso base /books
-
-# Importazioni per la gestione degli errori
-from fastapi.exceptions import RequestValidationError
-from requests import RequestException
-
-# Importazioni dei modelli dati e dei "database"
-from models.book import Book
+from fastapi import APIRouter, HTTPException, Path, Form
 from models.review import Review
-from data.books import books
-
-# Importazioni delle utility di FastAPI
-# - APIRouter: Permette di organizzare le rotte in gruppi logici
-# - HTTPException: Per generare errori HTTP significativi
-# - Path: Per validare e documentare i parametri di percorso
-from fastapi import APIRouter, HTTPException, Path, Form, Query
-# ValidationError: Per gestire errori di validazione dei dati inviati
-from pydantic import ValidationError
-# Annotated: Per aggiungere metadati ai tipi (usato per documentazione e validazione)
 from typing import Annotated
+from models.book import Book, BookPublic, BookCreate
+from data.db import SessionDep
+from sqlmodel import select
 
-# === CONFIGURAZIONE DEL ROUTER ===
-# Creazione del router per la gestione dei libri
-# prefix="/books": Specifica che tutte le rotte definite avranno il prefisso /books
-# (es. /books/, /books/1, ecc.)
+
 router = APIRouter(prefix="/books")
 
-# === DEFINIZIONE DELLE ROTTE (ENDPOINTS) ===
 
-# --- GET: Ottieni tutti i libri ---
 @router.get("/")
 def get_all_books(
-        sort: bool = False  # Parametro opzionale per ordinare i libri per recensione
-) -> list[Book]:  # La funzione restituirà una lista di oggetti Book
+        session: SessionDep,
+        sort: bool = False
+) -> list[BookPublic]:
+    """Returns the list of available books."""
+    statement = select(Book)
+    books = session.exec(statement).all()
     if sort:
-        # Se il parametro sort è True, ordina i libri per valore della recensione
-        # Utilizza una funzione di ordinamento che gestisce i valori None (ponendoli all'inizio)
-        return sorted(books.values(), key=lambda book: book.review if book.review is not None else -1)
+        return sorted(books, key=lambda book: book.review)
+    else:
+        return books
 
-    # Altrimenti, restituisce tutti i libri senza ordinamento
-    # Converte i valori del dizionario 'books' in una lista
-    return list(books.values())
 
-# --- GET: Ottieni un libro specifico tramite ID ---
-@router.get("/{id}")  # {id} è un parametro di percorso (URL)
-def get_book_by_id(id: Annotated[int, Path(description="L'ID del libro da cercare")]) -> Book:
-    """
-    Restituisce il libro con l'ID specificato
-    """
-    try:
-        return books[id]  # Cerca il libro nel dizionario usando l'ID come chiave
-    except KeyError:
-        # Se il libro non esiste (chiave non trovata), genera un errore 404 (Not Found)
-        raise HTTPException(status_code=404, detail="Libro non trovato")
-
-# --- POST: Aggiungi una recensione a un libro esistente ---
-@router.post("/{id}/review")
-def add_review(
-    id: Annotated[int, Path(description="L'ID del libro da recensire")],
-    review: Review  # Questo parametro viene estratto automaticamente dal corpo della richiesta JSON
-):
-    """
-    Aggiunge una recensione (valutazione da 1 a 5) al libro con l'ID specificato
-    """
-    try:
-        # Aggiorna il campo review del libro con il valore fornito
-        books[id].review = review.review
-        return "Recensione aggiunta con successo"
-    except KeyError:
-        # Se il libro non esiste, genera un errore 404
-        raise HTTPException(status_code=404, detail="Libro non trovato")
-
-# --- POST: Aggiungi un nuovo libro ---
 @router.post("/")
-def add_book(book: Book):  # L'oggetto Book viene deserializzato automaticamente dal JSON
-    """
-    Aggiunge un nuovo libro alla collezione
-    """
-    # Verifica se esiste già un libro con lo stesso ID
-    if book.id in books:
-        # Se esiste, genera un errore 403 (Forbidden)
-        raise HTTPException(status_code=403, detail="Esiste già un libro con questo ID")
-    
-    # Altrimenti, aggiunge il libro al dizionario
-    books[book.id] = book
-    return "Libro aggiunto con successo"
+def add_book(book: BookCreate, session: SessionDep):
+    """Adds a new book."""
+    validated_book = Book.model_validate(book)
+    session.add(validated_book)
+    session.commit()
+    return "Book successfully added."
 
-# --- PUT: Aggiorna un libro esistente ---
-@router.put("/{id}")
-def update_book(
-    id: Annotated[int, Path(description="L'ID del libro da aggiornare")],
-    book: Book  # Dati aggiornati del libro dal corpo della richiesta
+
+@router.post("_form/")
+def add_book_from_form(
+        book: Annotated[BookCreate, Form()],
+        session: SessionDep,
 ):
-    """
-    Aggiorna i dati di un libro esistente
-    """
-    # Verifica se il libro esiste
-    if not id in books:
-        raise HTTPException(status_code=404, detail="Libro non trovato")
-    
-    # Aggiorna i dati del libro
-    books[id] = book
-    return "Libro aggiornato con successo"
+    """Adds a new book"""
+    validated_book = Book.model_validate(book)
+    session.add(validated_book)
+    session.commit()
+    return "Book successfully added."
 
-# --- DELETE: Elimina tutti i libri ---
+
 @router.delete("/")
-def delete_all_book():
-    """
-    Elimina tutti i libri dalla collezione
-    """
-    books.clear()  # Svuota il dizionario
-    return "Tutti i libri sono stati eliminati con successo"
+def delete_all_books(session: SessionDep):
+    """Deletes all books."""
+    statement = select(Book)
+    session.exec(statement).delete()
+    session.commit()
+    return "All books successfully deleted"
 
-# --- DELETE: Elimina un libro specifico ---
+
 @router.delete("/{id}")
 def delete_book(
-    id: Annotated[int, Path(description="L'ID del libro da eliminare")]
+        session: SessionDep,
+        id: Annotated[int, Path(description="The ID of the book to delete")]
 ):
-    """
-    Elimina il libro con l'ID specificato
-    """
-    try:
-        del books[id]  # Elimina l'elemento dal dizionario
-        return "Libro eliminato con successo"
-    except KeyError:
-        # Se il libro non esiste, genera un errore 404
-        raise HTTPException(status_code=404, detail="Libro non trovato")
+    """Deletes the book with the given ID."""
+    book = session.get(Book, id)
+    if book is None:
+        raise HTTPException(status_code=404, detail="Book not found")
+    session.delete(book)
+    session.commit()
+    return "Book successfully deleted"
 
 
+@router.get("/{id}")
+def get_book_by_id(
+        session: SessionDep,
+        id: Annotated[int, Path(description="The ID of the book to get")]
+) -> BookPublic:
+    """Returns the book with the given id."""
+    book = session.get(Book, id)
+    if book is None:
+        raise HTTPException(status_code=404, detail="Book not found")
+    return book
 
-@router.post("books_form/")
-def add_book_from_form(
-    book: Annotated[Book, Form()]
-    # Utilizza Form per estrarre i dati dal corpo della richiesta,
-    # Form() è un helper di FastAPI che permette di estrarre i dati da un form HTML
+
+@router.post("/{id}/review")
+def add_review(
+        session: SessionDep,
+        id: Annotated[int, Path(description="The ID of the book to which add the review")],
+        review: Review
 ):
-    """
-    Aggiunge un nuovo libro alla collezione
-    """
-    # Verifica se esiste già un libro con lo stesso ID
-    if book.id in books:
-        # Se esiste, genera un errore 403 (Forbidden)
-        raise HTTPException(status_code=403, detail="Esiste già un libro con questo ID")
+    """Adds a review to the book with the given ID."""
+    book = session.get(Book, id)
+    if book is None:
+        raise HTTPException(status_code=404, detail="Book not found")
+    book.review = review.review
+    session.commit()
+    return "Review successfully added"
 
-    # Altrimenti, aggiunge il libro al dizionario
-    books[book.id] = book
-    return "Libro aggiunto con successo"
+
+@router.put("/{id}")
+def update_book(
+        session: SessionDep,
+        id: Annotated[int, Path(description="The ID of the book to update")],
+        new_book: BookCreate
+):
+    """Updates the book with the given ID."""
+    book = session.get(Book, id)
+    if book is None:
+        raise HTTPException(status_code=404, detail="Book not found")
+    book.title = new_book.title
+    book.author = new_book.author
+    book.review = new_book.review
+    session.commit()
+    return "Book successfully updated"

@@ -1,22 +1,25 @@
 {% extends "base.html" %}
+
 {% block content %}
+  <form method="post" action="{{ url_for('add_book_from_form') }}"> <!-- il method è il metodo di invio del form, il post serve per inviare i dati al server, l'action è l'url a cui inviare i dati, url_for genera l'url per la funzione add_book -->
 
-<form action="{{ url_for('add_book_from_form')}}" method="post"> <!-- url_for genera l'url per la funzione add_book_from_form -->
+    
 
-  <label for="id">ID:</label><br>
-  <input type="number" name="id" id="id" min="0" required><br>
+    <br> <!-- <br> serve per andare a capo -->
 
-  <label for="title">Title:</label><br>
-  <input type="text" name="title" id="title" required><br>
+    <label for="Title">Title</label>
+    <input name="Title" id="Title" type="text" required>
+    <br>
+    <label for="Author">Author</label>
+    <input name="Author" id="Author" type="text" required>
+    <br>
+    <label for="Review">Review</label>
+    <input name="Review" id="Review" type="number" required min="1" max="5"> <!-- min e max servono per limitare il numero di stelle -->
+    <br> <br>
 
-  <label for="author">Author:</label><br>
-  <input type="text" name="author" id="author" required><br>
+    <input type="submit" value="Add Book"> <!-- il submit serve per inviare i dati al server, il value è il testo che appare sul bottone -->
+    <input type="reset" value="Reset"> <!-- il reset serve per resettare i campi del form, il value è il testo che appare sul bottone -->
 
-  <label for="review">Review:</label><br>
-  <input type="number" name="review" id="review" min="1" max="5"><br><br>
-
-  <input type="submit" value="Add">
-  <input type="reset" value="Reset">
-</form>
+  </form>
 
 {% endblock %}

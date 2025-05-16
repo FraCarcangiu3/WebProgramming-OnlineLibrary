@@ -5,21 +5,26 @@
     <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}"> <!-- url_for genera l'url per il file css -->
 </head>
 <body>
+<!-- qui c'è il titolo e il sottotitolo -->
   <header>
     <h1>Online Library</h1>
     <p>A simple application example</p>
   </header>
+
+<!-- Qui ci sono i link per navigare tra le pagine -->
   <nav> <!-- Qui ci sono i link per navigare tra le pagine -->
     <a href="/">Home</a>
     <a href="{{ url_for('show_book_list') }}">Book List</a> <!-- url_for genera l'url per la funzione show_book_list -->
     <a href="{{ url_for('add_book_form') }}">Add Book</a>
-
   </nav>
+
+<!-- Qui c'è il contenuto principale della pagina -->
   <div class="container"> <!-- Qui ci sarà il contenuto specifico delle pagine che estendono questo template -->
     {% block content %} {% endblock %} <!-- Sto dicendo che qui ci sarà il contenuto specifico delle pagine che estendono questo template -->
-
   </div>
-  <footer> <!-- Qui ci sono le informazioni sul copyright -->
+
+<!-- Qui ci sono le informazioni sul copyright -->
+  <footer>
     <p>&copy; 2025 Programmazione Web UNICA</p>
   </footer>
   </header>

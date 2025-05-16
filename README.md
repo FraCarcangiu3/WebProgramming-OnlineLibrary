@@ -12,7 +12,8 @@ Benvenuto al corso introduttivo di Programmazione Web! 📚 Questa guida complet
 
 ### Parte 1: Il Backend (Server)
 5. [Back-end con FastAPI](#back-end-con-fastapi)
-   - [Modelli dati (Pydantic)](#modelli-dati-appmodels)
+   - [Modelli dati (SQLModel)](#modelli-dati-sqlmodel)
+   - [Database SQLite](#database-sqlite)
    - [API RESTful](#api-approutersbookspy)
    - [Punto di ingresso](#punto-di-ingresso-appmainpy)
 
@@ -39,8 +40,9 @@ Questa applicazione è un esempio pratico di un'applicazione web full-stack che 
 - Come creare API REST con FastAPI
 - Come connettere un front-end a un back-end
 - Come implementare le operazioni CRUD (Create, Read, Update, Delete)
-- Come gestire i dati e la loro validazione
+- Come gestire i dati e la loro validazione usando SQLModel
 - Come creare un'interfaccia utente interattiva
+- Come implementare un database SQLite persistente
 
 ### Funzionalità dell'applicazione:
 
@@ -58,7 +60,7 @@ Prima di iniziare, assicurati di avere:
 - **Python 3.7 o superiore** installato
 - **Un editor di codice** (come Visual Studio Code, PyCharm, o anche un semplice editor di testo)
 - **Conoscenze di base** di HTML, CSS e JavaScript
-- **Familiarità di base** con i concetti di programmazione
+- **Familiarità di base** con i concetti di programmazione e database
 
 Non preoccuparti se non sei esperto in tutte queste tecnologie: questa guida è pensata per spiegare ogni passaggio in modo chiaro.
 
@@ -74,8 +76,14 @@ In questo progetto utilizziamo diverse tecnologie, divise tra la parte server (b
 - **FastAPI**: Un framework moderno e veloce per la creazione di API web con Python.
   - *Perché lo usiamo?* FastAPI è facile da usare, veloce, e include automaticamente la documentazione delle API.
 
-- **Pydantic**: Libreria per la validazione dei dati e la definizione di modelli.
-  - *Perché lo usiamo?* Pydantic garantisce che i dati siano nel formato corretto, riducendo gli errori.
+- **SQLModel**: Una libreria per interagire con database SQL attraverso modelli Python.
+  - *Perché lo usiamo?* SQLModel combina la potenza di SQLAlchemy per le operazioni database con la semplicità di Pydantic per la validazione dei dati.
+
+- **SQLite**: Un motore di database relazionale leggero.
+  - *Perché lo usiamo?* SQLite è facile da configurare, non richiede un server separato e archivia i dati in un singolo file.
+
+- **Faker**: Una libreria per generare dati realistici di esempio.
+  - *Perché lo usiamo?* Faker ci permette di popolare il database con dati di prova realistici.
 
 - **Uvicorn**: Un server ASGI (Asynchronous Server Gateway Interface) per eseguire l'applicazione FastAPI.
   - *Perché lo usiamo?* Uvicorn è veloce e facile da configurare per eseguire la nostra applicazione web.
@@ -97,6 +105,7 @@ La nostra applicazione segue l'architettura **client-server**:
 - Il **server** (back-end) gestisce i dati e fornisce API
 - Il **client** (front-end) mostra l'interfaccia utente e interagisce con l'utente
 - La comunicazione tra client e server avviene tramite **API REST**
+- I dati sono memorizzati in un **database SQLite**
 
 #### Cos'è un'API REST?
 
@@ -118,28 +127,32 @@ API REST (Representational State Transfer) è un'architettura per la creazione d
 lab2025/
 ├── app/
 │   ├── data/
-│   │   └── books.py         # "Database" di esempio con i libri
+│   │   ├── db.py              # Configurazione del database SQLite
+│   │   └── database.db        # File del database SQLite
 │   ├── models/
-│   │   ├── book.py          # Modello per i libri
-│   │   └── review.py        # Modello per le recensioni
+│   │   ├── book.py            # Modello per i libri
+│   │   └── review.py          # Modello per le recensioni
 │   ├── routers/
-│   │   └── books.py         # Definizione delle API
-│   ├── static/              # Directory per i file statici
+│   │   ├── books.py           # Definizione delle API per i libri
+│   │   └── frontend.py        # Gestione delle pagine frontend
+│   ├── static/                # Directory per i file statici
 │   │   ├── css/
-│   │   │   └── style.css    # Stili CSS separati
+│   │   │   └── style.css      # Stili CSS separati
 │   │   └── js/
-│   │       └── main.js      # Script JavaScript
+│   │       └── main.js        # Script JavaScript
 │   ├── templates/
-│   │   └── home.html        # Interfaccia utente (solo struttura HTML)
+│   │   ├── home.html          # Pagina principale
+│   │   └── list.html          # Pagina di elenco dei libri
 │   ├── __init__.py
-│   └── main.py              # Punto di ingresso dell'applicazione
-└── README.md                # Questa guida
+│   └── main.py                # Punto di ingresso dell'applicazione
+├── requirements.txt           # Dipendenze del progetto
+└── README.md                  # Questa guida
 ```
 
 Questa struttura segue un pattern comune per le applicazioni web:
 
 - **app/**: La directory principale che contiene tutto il codice dell'applicazione
-  - **data/**: Contiene i dati dell'applicazione (in un'applicazione reale, potrebbe essere sostituito da un database)
+  - **data/**: Contiene la configurazione del database e il file del database stesso
   - **models/**: Definisce la struttura dei dati utilizzati dall'applicazione
   - **routers/**: Contiene la logica delle API e delle rotte dell'applicazione
   - **static/**: Contiene i file statici (CSS, JavaScript, immagini)
@@ -158,27 +171,35 @@ Questa organizzazione permette di:
 
 In questa sezione, analizzeremo come costruire il "cervello" della nostra applicazione: il back-end. Il back-end è la parte del software che gira sul server e gestisce la logica dell'applicazione, l'accesso ai dati e le operazioni di base.
 
-### Modelli dati (app/models/)
+### Modelli dati (SQLModel)
 
-I modelli dati definiscono la struttura dei nostri oggetti e garantiscono che i dati siano validi. In Python, utilizziamo Pydantic per questo scopo.
+I modelli dati definiscono la struttura dei nostri oggetti e garantiscono che i dati siano validi. In questo progetto, utilizziamo SQLModel che combina la validazione di Pydantic con le funzionalità ORM di SQLAlchemy.
 
-#### ✏️ Passo 1: Definire il modello Book (app/models/book.py)
+#### ✏️ Passo 1: Definire i modelli dei libri (app/models/book.py)
 ```python
-from pydantic import BaseModel, Field
+from sqlmodel import Field, SQLModel
 from typing import Annotated
 
-class Book(BaseModel):
-    id: int
+class BookBase(SQLModel): #classe base per definire i campi comuni
     title: str
     author: str
-    review: Annotated[int|None, Field(ge=1, le=5)] = None
+    review: Annotated[int | None, Field(ge=1, le=5)] = None
+
+class Book(BookBase, table=True): #modello per la tabella del database
+    id: int = Field(default=None, primary_key=True)
+
+class BookCreate(BookBase): #modello per la creazione di un libro
+    pass
+
+class BookPublic(BookBase): #modello per esporre i dati pubblicamente
+    id: int
 ```
 
-Questo modello rappresenta un libro con:
-- `id`: identificatore numerico univoco
-- `title`: titolo del libro
-- `author`: autore del libro
-- `review`: recensione opzionale (da 1 a 5)
+Questo sistema di modelli implementa:
+- Una classe base `BookBase` con i campi comuni
+- Una classe `Book` per la definizione della tabella del database
+- Una classe `BookCreate` per la creazione di nuovi libri (senza ID)
+- Una classe `BookPublic` per esporre i dati pubblicamente (con ID)
 
 #### ✏️ Passo 2: Definire il modello Review (app/models/review.py)
 ```python
@@ -191,19 +212,53 @@ class Review(BaseModel):
 
 Questo modello rappresenta una recensione con un valore da 1 a 5.
 
-### Dati di esempio (app/data/books.py)
+### Database SQLite
 
-Per semplicità, usiamo un dizionario Python come "database" invece di un database reale:
+Per archiviare i dati in modo persistente, utilizziamo SQLite, un database SQL leggero che memorizza i dati in un singolo file.
 
+#### ✏️ Configurazione del database (app/data/db.py)
 ```python
+from sqlmodel import create_engine, SQLModel, Session
+from typing import Annotated
+from fastapi import Depends
+from faker import Faker
+import os
 from models.book import Book
 
-books = {
-    0: Book(id=0, title="libro zero", author="autore zero", review=1),
-    1: Book(id=1, title="libro uno", author="autore uno", review=2),
-    2: Book(id=2, title="libro due", author="autore due", review=5),
-}
+# Configurazione del database SQLite
+sqlite_file_name = "app/data/database.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
+connect_args = {"check_same_thread": False}
+engine = create_engine(sqlite_url, connect_args=connect_args, echo=True)
+
+# Funzione per inizializzare il database
+def init_database():
+    ds_exists = os.path.isfile(sqlite_file_name)
+    SQLModel.metadata.create_all(engine)
+    if not ds_exists:
+        # Generazione di dati di esempio con Faker
+        f = Faker("it_IT")
+        with Session(engine) as session:
+            for i in range(10):
+                book = Book(title=f.sentence(nb_words=5), author=f.name(),
+                            review=f.pyint(1, 5))
+                session.add(book)
+            session.commit()
+
+# Funzione per ottenere una sessione di database
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+# Dependency injection per ottenere la sessione nelle API
+SessionDep = Annotated[Session, Depends(get_session)]
 ```
+
+Questo codice:
+1. Configura la connessione al database SQLite
+2. Definisce una funzione per inizializzare il database e creare dati di esempio
+3. Crea una funzione per ottenere sessioni di database
+4. Definisce una dependency injection per FastAPI
 
 ### API (app/routers/books.py)
 
@@ -216,185 +271,98 @@ Le API definiscono le operazioni che possiamo eseguire sui nostri dati. In quest
 | Ottieni tutti i libri | GET | `/books` | Restituisce la lista di tutti i libri disponibili | `GET /books` |
 | Ottieni tutti i libri (ordinati) | GET | `/books?sort=true` | Restituisce i libri ordinati per valutazione | `GET /books?sort=true` |
 | Ottieni un libro specifico | GET | `/books/{id}` | Ottiene un libro specifico tramite il suo ID | `GET /books/1` |
-| Aggiungi un nuovo libro | POST | `/books` | Crea un nuovo libro (richiede i dati del libro nel corpo della richiesta) | `POST /books` con JSON: `{"id": 3, "title": "Nuovo libro", "author": "Autore"}` |
-| Aggiorna un libro | PUT | `/books/{id}` | Aggiorna i dati di un libro esistente | `PUT /books/1` con JSON: `{"id": 1, "title": "Titolo aggiornato", "author": "Autore"}` |
+| Aggiungi un nuovo libro | POST | `/books` | Crea un nuovo libro (richiede i dati del libro nel corpo della richiesta) | `POST /books` con JSON: `{"title": "Nuovo libro", "author": "Autore"}` |
+| Aggiungi un libro tramite form | POST | `/books_form/` | Aggiunge un libro tramite un form HTML | Form con campi per titolo e autore |
+| Aggiorna un libro | PUT | `/books/{id}` | Aggiorna i dati di un libro esistente | `PUT /books/1` con JSON: `{"title": "Titolo aggiornato", "author": "Autore"}` |
 | Elimina un libro | DELETE | `/books/{id}` | Elimina un libro specifico | `DELETE /books/1` |
-| Elimina tutti i libri | DELETE | `/books` | Elimina tutti i libri dal database | `DELETE /books` |
 | Aggiungi una recensione | POST | `/books/{id}/review` | Aggiunge una valutazione (1-5) a un libro specifico | `POST /books/1/review` con JSON: `{"review": 5}` |
 
 #### Implementazione dettagliata delle API
 
-Ecco come sono implementate le API nel file `books.py`:
+Ecco come sono implementate le API nel file `books.py` usando SQLModel:
 
 ##### 1. Ottenere tutti i libri
 
 ```python
 @router.get("/")
-def get_all_books(sort: bool = False) -> list[Book]:
+def get_all_books(
+        session: SessionDep,
+        sort: bool = False
+) -> list[BookPublic]:
+    """Returns the list of available books."""
+    statement = select(Book)
+    books = session.exec(statement).all()
     if sort:
-        # Ordina i libri per recensione se il parametro sort è true
-        return sorted(books.values(), key=lambda book: book.review)
-    
-    # Altrimenti, restituisce tutti i libri senza ordinamento
-    return list(books.values())
+        return sorted(books, key=lambda book: book.review)
+    else:
+        return books
 ```
 
 Questa API:
-- Accetta un parametro opzionale `sort` (default: `false`)
+- Utilizza la sessione del database iniettata tramite dependency injection
+- Esegue una query SELECT per ottenere tutti i libri dal database
 - Se `sort=true`, ordina i libri in base al valore della recensione
 - Restituisce la lista dei libri come array JSON
 
-##### 2. Ottenere un libro specifico
-
-```python
-@router.get("/{id}")
-def get_book_by_id(id: Annotated[int, Path(description="The ID of the book")]) -> Book:
-    try:
-        return books[id]
-    except KeyError:
-        # Se il libro non esiste, restituisce un errore 404
-        raise HTTPException(status_code=404, detail="Book not found")
-```
-
-Questa API:
-- Richiede un ID come parametro nel percorso URL
-- Cerca il libro con l'ID specificato
-- Se trova il libro, lo restituisce
-- Se il libro non esiste, restituisce un errore 404
-
-##### 3. Aggiungere una recensione
-
-```python
-@router.post("/{id}/review")
-def add_review(
-    id: Annotated[int, Path(description="The ID of the book")],
-    review: Review
-):
-    try:
-        books[id].review = review.review
-        return "Review added successfully"
-    except KeyError:
-        raise HTTPException(status_code=404, detail="Libro non trovato")
-```
-
-Questa API:
-- Richiede un ID come parametro nel percorso URL
-- Accetta un oggetto Review nel corpo della richiesta
-- Aggiorna la recensione del libro con l'ID specificato
-- Restituisce un messaggio di successo o un errore 404 se il libro non esiste
-
-##### 4. Aggiungere un nuovo libro
+##### 2. Aggiungere un nuovo libro
 
 ```python
 @router.post("/")
-def add_book(book: Book):
-    if book.id in books:
-        raise HTTPException(status_code=403, detail="Book ID already exists")
-    books[book.id] = book
-    return "Book added successfully"
+def add_book(book: BookCreate, session: SessionDep):
+    """Adds a new book."""
+    validated_book = Book.model_validate(book)
+    session.add(validated_book)
+    session.commit()
+    return "Book successfully added."
 ```
 
 Questa API:
-- Accetta un oggetto Book nel corpo della richiesta
-- Verifica se esiste già un libro con lo stesso ID
-- Se l'ID è già in uso, restituisce un errore 403
-- Altrimenti, aggiunge il libro e restituisce un messaggio di successo
-
-##### 5. Aggiornare un libro esistente
-
-```python
-@router.put("/{id}")
-def update_book(
-    id: Annotated[int, Path(description="The ID of the book")],
-    book: Book
-):
-    if not id in books:
-        raise HTTPException(status_code=404, detail="Book not found")
-    books[id] = book
-    return "Book updated successfully"
-```
-
-Questa API:
-- Richiede un ID come parametro nel percorso URL
-- Accetta un oggetto Book nel corpo della richiesta
-- Verifica se esiste un libro con l'ID specificato
-- Se il libro esiste, lo aggiorna con i nuovi dati
-- Altrimenti, restituisce un errore 404
-
-##### 6. Eliminare tutti i libri
-
-```python
-@router.delete("/")
-def delete_all_book():
-    books.clear()
-    return "All books deleted successfully"
-```
-
-Questa API:
-- Elimina tutti i libri dal "database"
+- Accetta un oggetto BookCreate nel corpo della richiesta
+- Convalida i dati ricevuti
+- Crea un nuovo record nel database
 - Restituisce un messaggio di conferma
-
-##### 7. Eliminare un libro specifico
-
-```python
-@router.delete("/{id}")
-def delete_book(id: Annotated[int, Path(description="The ID of the book")]):
-    try:
-        del books[id]
-        return "Book deleted successfully"
-    except KeyError:
-        raise HTTPException(status_code=404, detail="Book not found")
-```
-
-Questa API:
-- Richiede un ID come parametro nel percorso URL
-- Cerca di eliminare il libro con l'ID specificato
-- Se il libro viene eliminato, restituisce un messaggio di successo
-- Se il libro non esiste, restituisce un errore 404
 
 ### Punto di ingresso (app/main.py)
 
 Il file main.py è il punto di ingresso dell'applicazione, ossia il file che viene eseguito per avviare il server.
 
-#### ✏️ Passo 1: Creare il file main.py
-
 ```python
 from fastapi import FastAPI
-from routers import books
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from fastapi import Request
+from routers import books, frontend
 from fastapi.staticfiles import StaticFiles
+from data.db import init_database
+from contextlib import asynccontextmanager
 
-app = FastAPI()
-app.include_router(books.router, tags=["books"])
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Funzione di gestione del ciclo di vita dell'applicazione.
+    Inizializza il database quando l'app viene avviata.
+    """
+    init_database()
+    yield
+    
+app = FastAPI(lifespan=lifespan)  # Crea un'istanza di FastAPI con la funzione di gestione del ciclo di vita
+app.include_router(books.router, tags=["Books"])
+app.include_router(frontend.router, tags=["Frontend"])
 
-# Configurazione per servire i file statici (CSS, JavaScript)
+# Monta la cartella "static" per servire file statici (CSS, JavaScript, immagini)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-templates = Jinja2Templates(directory="app/templates")
-@app.get("/", response_class=HTMLResponse)
-def home(request: Request):
-    return templates.TemplateResponse(
-        request=request, name="home.html"
-    )
-
+# Questo blocco viene eseguito solo quando il file viene eseguito direttamente
 if __name__ == "__main__":
+    # Uvicorn è un server ASGI (Asynchronous Server Gateway Interface) per applicazioni Python
     import uvicorn
+    # Avvia il server con l'app FastAPI
     uvicorn.run(app, reload=True)
 ```
 
-#### 📝 Spiegazione del codice
-
 Questo file:
-1. Crea un'applicazione FastAPI
-2. Integra il router delle API dei libri
-3. **Configura il sistema per servire i file statici** (CSS e JavaScript)
-4. Configura il sistema di templating Jinja2 per servire la pagina HTML
-5. Definisce una route per la pagina principale
-6. Avvia il server quando il file viene eseguito direttamente
-
-La linea `app.mount("/static", StaticFiles(directory="app/static"), name="static")` è fondamentale poiché permette di servire i file statici dalla cartella `app/static`, rendendoli accessibili tramite l'URL `/static` nel browser.
+1. Crea un gestore del ciclo di vita dell'applicazione che inizializza il database
+2. Crea un'applicazione FastAPI
+3. Integra i router per le API dei libri e per il frontend
+4. Configura il sistema per servire i file statici (CSS e JavaScript)
+5. Avvia il server quando il file viene eseguito direttamente
 
 ## Front-end con HTML, CSS e JavaScript
 
@@ -419,430 +387,134 @@ HTML (HyperText Markup Language) definisce la struttura e il contenuto della pag
 </head>
 <body>
     <header>
-        <div class="contenitore">
-            <h1>Libreria Online</h1>
-            <p class="sottotitolo">Gestione del catalogo libri</p>
-        </div>
+        <h1>Libreria Online</h1>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/book_list">Visualizza Libri</a></li>
+            </ul>
+        </nav>
     </header>
-
-    <main class="contenitore">
-        <!-- Contenuto dell'applicazione -->
-        <!-- ... (tabella dei libri, form di modifica, ecc.) ... -->
+    
+    <main>
+        <h2>{{ text.title }}</h2>
+        <p>{{ text.content }}</p>
+        
+        <!-- Sezione per aggiungere un nuovo libro -->
+        <section id="add-book">
+            <h3>Aggiungi un nuovo libro</h3>
+            <form id="book-form">
+                <div class="form-group">
+                    <label for="title">Titolo:</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="author">Autore:</label>
+                    <input type="text" id="author" name="author" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="review">Valutazione (1-5):</label>
+                    <input type="number" id="review" name="review" min="1" max="5">
+                </div>
+                
+                <button type="submit">Aggiungi libro</button>
+            </form>
+        </section>
+        
+        <!-- Sezione per visualizzare i libri (popolata da JavaScript) -->
+        <section id="book-list">
+            <h3>Libri disponibili</h3>
+            <button id="sort-button">Ordina per valutazione</button>
+            <div id="books-container"></div>
+        </section>
     </main>
-
+    
     <footer>
-        <div class="contenitore">
-            <p>© 2025 Libreria Online - Progetto realizzato da Francesco Carcangiu</p>
-        </div>
+        <p>Laboratorio di Programmazione Web - Libreria Online</p>
     </footer>
-
-    <!-- Collegamento al file JavaScript esterno -->
+    
+    <!-- Collegamento allo script JavaScript -->
     <script src="/static/js/main.js"></script>
 </body>
 </html>
 ```
 
-#### 📝 Elementi principali
-
-La struttura HTML organizza l'interfaccia in:
-- **Header**: Contiene il titolo dell'applicazione
-- **Main**: La sezione principale che contiene:
-  - Tabella per visualizzare i libri
-  - Form per aggiungere/modificare libri
-  - Form per aggiungere recensioni
-- **Footer**: Contiene le informazioni sul copyright
-
-### CSS (app/static/css/style.css)
-
-CSS (Cascading Style Sheets) definisce l'aspetto visivo degli elementi HTML.
-
-#### ✏️ Passo 1: Definire le variabili e il reset
-
-```css
-/* Definizione delle variabili CSS */
-:root {
-    --blu-principale: #3498db;   /* Colore primario per pulsanti e accenti */
-    --blu-scuro: #2c3e50;        /* Colore secondario per header e titoli */
-    --rosso: #e74c3c;            /* Colore per azioni pericolose (es. elimina) */
-    --testo-colore: #333;        /* Colore del testo principale */
-    --sfondo-chiaro: #f9f9f9;    /* Colore di sfondo della pagina */
-    --bianco: #ffffff;           /* Colore bianco per elementi in primo piano */
-    --ombra: 0 2px 8px rgba(0, 0, 0, 0.1);  /* Effetto ombra per elementi */
-    --bordo-arrotondato: 8px;    /* Raggio per angoli arrotondati */
-}
-
-/* Reset degli stili di default del browser */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-```
-
-#### ✏️ Passo 2: Definire gli stili principali
-
-```css
-/* Stile del corpo della pagina */
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    line-height: 1.6;
-    color: var(--testo-colore);
-    background-color: var(--sfondo-chiaro);
-    padding-bottom: 2rem;
-}
-
-/* Stile dell'intestazione */
-header {
-    background-color: var(--blu-scuro);
-    color: var(--bianco);
-    text-align: center;
-    padding: 1.5rem 0;
-    margin-bottom: 2rem;
-    box-shadow: var(--ombra);
-}
-/* ... altri stili ... */
-```
-
-#### 📝 Vantaggi di un file CSS separato
-
-- **Maggiore leggibilità**: il codice HTML è più pulito e focalizzato sulla struttura
-- **Manutenibilità**: è più facile apportare modifiche all'aspetto dell'app
-- **Caching**: i browser possono memorizzare il file CSS, migliorando le prestazioni
-- **Riutilizzo**: gli stessi stili possono essere applicati a più pagine
-
-### JavaScript (app/static/js/main.js)
-
-JavaScript aggiunge interattività alla pagina web e comunica con il server.
-
-#### ✏️ Passo 1: Configurare le variabili iniziali
-
-```javascript
-// API URLs
-const API_URL = '/books';
-
-// Elementi DOM
-const sezioneLibri = document.getElementById('sezione-libri');
-const sezioneFormLibro = document.getElementById('sezione-form-libro');
-const sezioneFormRecensione = document.getElementById('sezione-form-recensione');
-const listaLibri = document.getElementById('lista-libri');
-// ... altre variabili ...
-
-// Stato dell'applicazione
-let staModificando = false;
-let ordinamentoAttuale = false;
-let valutazioneSelezionata = 0;
-
-// Carica i libri all'avvio
-document.addEventListener('DOMContentLoaded', () => {
-    caricaLibri();
-    impostaGestoriEventi();
-});
-```
-
-#### ✏️ Passo 2: Implementare le funzioni principali
-
-```javascript
-// Funzione per caricare i libri dal server
-async function caricaLibri() {
-    try {
-        const risposta = await fetch(`${API_URL}?sort=${ordinamentoAttuale}`);
-        if (!risposta.ok) {
-            throw new Error('Errore durante il caricamento dei libri');
-        }
-        const libri = await risposta.json();
-        renderizzaLibri(libri);
-    } catch (error) {
-        mostraAvviso(error.message, 'errore');
-    }
-}
-
-// ... altre funzioni ...
-```
-
-#### 📝 Funzionalità implementate in JavaScript
-
-1. **Caricamento dei dati**: recupera i libri dal server utilizzando fetch API
-2. **Manipolazione del DOM**: aggiorna dinamicamente l'interfaccia utente
-3. **Gestione degli eventi**: risponde alle azioni dell'utente (clic, invio dei form)
-4. **Comunicazione con il backend**: invia richieste HTTP al server
-5. **Gestione degli errori**: mostra avvisi all'utente quando necessario
-
-## Separazione delle preoccupazioni: Una best practice
-
-Una delle migliori pratiche nello sviluppo web è la "separazione delle preoccupazioni" (Separation of Concerns, SoC). Scopriamo cos'è e perché è così importante per il tuo sviluppo come programmatore.
-
-### 🤔 Cosa significa?
-
-La separazione delle preoccupazioni è un principio di design che consiste nel dividere un'applicazione in parti distinte, ciascuna responsabile di un aspetto specifico:
-
-1. **HTML** si occupa della struttura e del contenuto 
-2. **CSS** si occupa dell'aspetto visivo e dello stile
-3. **JavaScript** si occupa del comportamento e dell'interattività
-
-### 🌟 Vantaggi di questa separazione
-
-#### 1. Migliore organizzazione del codice
-Ogni file ha uno scopo chiaro e ben definito, rendendo più facile navigare e comprendere il codice.
-
-#### 2. Manutenibilità migliorata
-È possibile modificare uno degli aspetti (ad esempio lo stile) senza dover toccare gli altri (struttura o comportamento).
-
-#### 3. Collaborazione più efficiente
-Diversi membri del team possono lavorare contemporaneamente su parti diverse dell'applicazione con meno conflitti.
-
-#### 4. Riutilizzo del codice
-Gli stili e gli script possono essere facilmente riutilizzati in più pagine.
-
-#### 5. Prestazioni migliori
-I browser possono memorizzare nella cache i file CSS e JavaScript, riducendo i tempi di caricamento per le visite successive.
-
-### 🛠️ Implementazione nel nostro progetto
-
-Nel nostro progetto, abbiamo separato:
-
-- **app/templates/home.html**: contiene solo la struttura della pagina
-- **app/static/css/style.css**: contiene tutte le regole di stile
-- **app/static/js/main.js**: contiene tutta la logica e l'interattività
-
-Per far funzionare questa organizzazione, abbiamo configurato FastAPI per servire i file statici con:
-
-```python
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-```
-
-E abbiamo aggiunto i riferimenti ai file esterni nell'HTML:
-
-```html
-<link rel="stylesheet" href="/static/css/style.css">
-<script src="/static/js/main.js"></script>
-```
-
-### 📊 Confronto: Prima e dopo
-
-**Prima**: tutto il codice (HTML, CSS, JavaScript) era in un unico file, rendendo difficile la manutenzione e la leggibilità.
-
-**Dopo**: ogni linguaggio ha il suo file dedicato, rendendo il codice più organizzato, leggibile e manutenibile.
-
-## API e comunicazione client-server
-
-Un'applicazione web moderna è composta da due parti che comunicano tra loro: il client (frontend) e il server (backend). Vediamo come funziona questa comunicazione nella nostra applicazione.
-
-### 🔄 Il ciclo di comunicazione
-
-Ecco come funziona la comunicazione tra il front-end e il back-end:
-
-1. **Richiesta**: L'utente esegue un'azione nell'interfaccia (ad esempio, clicca su "Aggiungi Libro")
-2. **JavaScript** cattura l'evento e prepara una richiesta HTTP al server
-3. **API Backend** riceve la richiesta, la elabora e accede ai dati
-4. **Risposta**: Il server risponde con i dati richiesti o un messaggio di conferma
-5. **Aggiornamento UI**: JavaScript riceve la risposta e aggiorna l'interfaccia utente
-
-### 📡 Esempi di comunicazione client-server
-
-#### Esempio 1: Caricamento dei libri
-
-```javascript
-// Nel file JavaScript (client)
-async function caricaLibri() {
-    const risposta = await fetch('/books?sort=' + ordinamentoAttuale);
-    const libri = await risposta.json();
-    renderizzaLibri(libri);
-}
-```
-
-```python
-# Nel file Python (server)
-@router.get("/")
-def get_all_books(sort: bool = False) -> list[Book]:
-    if sort:
-        return sorted(books.values(), key=lambda book: book.review)
-    return list(books.values())
-```
-
-#### Esempio 2: Aggiungere un nuovo libro
-
-```javascript
-// Nel file JavaScript (client)
-async function aggiungiLibro(datiLibro) {
-    const risposta = await fetch('/books', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datiLibro)
-    });
-    // Gestione della risposta...
-}
-```
-
-```python
-# Nel file Python (server)
-@router.post("/")
-def add_book(book: Book):
-    if book.id in books:
-        raise HTTPException(status_code=403, detail="Book ID already exists")
-    books[book.id] = book
-    return "Book added successfully"
-```
-
-### 🔍 Debugging della comunicazione
-
-Quando sviluppi un'applicazione web, è utile conoscere gli strumenti per il debug della comunicazione client-server:
-
-1. **Strumenti di sviluppo del browser** (F12): La scheda "Network" mostra tutte le richieste HTTP
-2. **Console del browser**: Puoi vedere gli errori JavaScript e le risposte delle richieste
-3. **Log del server**: Uvicorn mostra i log delle richieste e degli errori del server
+Questo HTML:
+1. Crea un documento HTML5 con metadati appropriati
+2. Collega un foglio di stile esterno e uno script JavaScript
+3. Crea una struttura di base con header, main e footer
+4. Include un modulo per aggiungere nuovi libri
+5. Prepara una sezione per visualizzare i libri (che verrà popolata da JavaScript)
+6. Utilizza template Jinja2 per inserire dati dinamici (`{{ text.title }}` e `{{ text.content }}`)
 
 ## Come eseguire l'applicazione
 
-Questa guida dettagliata ti aiuterà a configurare e avviare l'applicazione sul tuo computer.
+Per eseguire l'applicazione, segui questi passaggi:
 
-### Prerequisiti di sistema
+1. **Installa le dipendenze**:
+   ```bash
+   pip install fastapi[standard] sqlmodel faker uvicorn
+   ```
+   Oppure usando il file requirements.txt:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-Prima di iniziare, assicurati di avere:
+2. **Avvia l'applicazione**:
+   ```bash
+   python -m app.main
+   ```
 
-1. **Python 3.7 o superiore** installato sul tuo sistema.
-   - Per verificare se Python è installato e quale versione: `python --version` o `python3 --version`
-   - Se non è installato, scaricalo da [python.org](https://www.python.org/downloads/)
-
-2. **pip** (il gestore dei pacchetti di Python)
-   - Generalmente viene installato con Python
-   - Per verificare: `pip --version` o `pip3 --version`
-
-### Passo 1: Clonare o scaricare il progetto
-
-Hai due opzioni:
-
-- **Opzione 1**: Clona il repository se hai Git installato:
-  ```bash
-  git clone https://github.com/tuousername/lab2025.git
-  cd lab2025
-  ```
-
-- **Opzione 2**: Scarica il progetto come file ZIP, estrailo e apri il terminale nella cartella estratta.
-
-### Passo 2: Creare un ambiente virtuale (consigliato)
-
-Un ambiente virtuale isola le dipendenze del progetto da quelle di sistema:
-
-```bash
-# Su Windows
-python -m venv venv
-venv\Scripts\activate
-
-# Su macOS/Linux
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### Passo 3: Installare le dipendenze
-
-Installa i pacchetti richiesti:
-
-```bash
-pip install fastapi uvicorn jinja2
-```
-
-Alternativamente, se esiste un file `requirements.txt`:
-
-```bash
-pip install -r requirements.txt
-```
-
-### Passo 4: Avviare l'applicazione
-
-```bash
-# Dalla directory principale del progetto
-python -m app.main
-```
-
-Dovresti vedere qualcosa di simile a:
-
-```
-INFO:     Started server process [12345]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-```
-
-### Passo 5: Aprire l'applicazione nel browser
-
-Apri il tuo browser web e vai all'indirizzo:
-```
-http://localhost:8000
-```
-
-Dovresti vedere l'interfaccia della Libreria Online con l'elenco dei libri.
-
-### Passo 6: Esplorare la documentazione delle API
-
-FastAPI genera automaticamente una documentazione interattiva delle API. Puoi accedervi visitando:
-```
-http://localhost:8000/docs
-```
-
-Questa pagina ti permette di:
-- Vedere tutte le API disponibili
-- Leggere la documentazione di ogni API
-- Testare le API direttamente dal browser
-
-### Risoluzione dei problemi comuni
-
-- **Errore "Port already in use"**: Un'altra applicazione sta già usando la porta 8000
-  - Soluzione: Termina l'altra applicazione o modifica la porta in `main.py` aggiungendo `port=8001` a `uvicorn.run()`
-
-- **ModuleNotFoundError**: Un modulo non è stato trovato
-  - Soluzione: Verifica di aver installato tutte le dipendenze con `pip install fastapi uvicorn jinja2`
-  
-- **Errore 404 quando visiti una pagina**: L'URL potrebbe essere errato
-  - Soluzione: Verifica l'URL o controlla i log del server per eventuali errori
-
-- **Il server si avvia ma l'interfaccia non carica i libri**: Potrebbe esserci un problema con le chiamate API
-  - Soluzione: Apri gli strumenti di sviluppo del browser (F12) e controlla la console per eventuali errori
+3. **Accedi all'applicazione**:
+   - Apri il browser e vai a http://localhost:8000
+   - Per la documentazione API automatica, vai a http://localhost:8000/docs
 
 ## Esercizi proposti
 
-Ecco alcuni esercizi per migliorare l'applicazione:
+Per approfondire le conoscenze acquisite, ecco alcuni esercizi che puoi provare a implementare:
 
-### 1. Miglioramenti UI/UX
-   - Aggiungi una modalità tema scuro implementando un file CSS alternativo
-   - Migliora l'aspetto mobile aggiungendo media queries al file CSS
-   - Aggiungi animazioni per le transizioni usando CSS o librerie JavaScript
+1. **Ricerca libri**: Aggiungi una funzionalità di ricerca per trovare libri per titolo o autore.
+2. **Paginazione**: Implementa la paginazione per gestire grandi quantità di libri.
+3. **Autenticazione**: Aggiungi un sistema di login per proteggere le operazioni di scrittura.
+4. **Categorie**: Aggiungi supporto per categorizzare i libri (es. Fantascienza, Storia, etc.).
+5. **Immagini**: Aggiungi supporto per caricare le copertine dei libri.
+6. **Commenti**: Consenti agli utenti di lasciare commenti testuali oltre alle valutazioni numeriche.
 
-### 2. Organizzazione modulare del JavaScript
-   - Dividi il file `main.js` in moduli più piccoli e specifici (es. `api.js`, `ui.js`, `validation.js`)
-   - Implementa un sistema di gestione degli stati più avanzato
-   - Utilizza pattern di design JavaScript come il Module Pattern o il Revealing Module Pattern
+## Guida alla risoluzione dei problemi comuni
 
-### 3. Ottimizzazione dei file statici
-   - Implementa la minificazione dei file CSS e JavaScript
-   - Aggiungi versioning ai file statici per gestire la cache del browser
-   - Utilizza un preprocessore CSS (come SASS o LESS) per migliorare la manutenibilità
+### 🐛 Problema: L'applicazione non si avvia
 
-### 4. Funzionalità aggiuntive
-   - Aggiungi la ricerca dei libri con evidenziazione dinamica dei risultati
-   - Implementa categorie/generi per i libri
-   - Aggiungi paginazione per la lista dei libri
+**Possibili cause e soluzioni**:
+- **Porte già in uso**: Se la porta 8000 è già in uso, puoi specificare una porta diversa: `uvicorn app.main:app --port 8001`
+- **Dipendenze mancanti**: Assicurati di aver installato tutte le dipendenze con `pip install -r requirements.txt`
+- **Percorso errato**: Esegui il comando dalla directory principale del progetto
 
-### 5. Estensione dello stile
-   - Crea un design system con variabili CSS e componenti riutilizzabili
-   - Implementa diversi temi che l'utente può scegliere
-   - Aggiungi effetti hover e transizioni più sofisticate
+### 🐛 Problema: Le richieste API falliscono
 
-### 6. Persistenza dei dati
-   - Sostituisci il "database" in-memory con SQLite
-   - Aggiungi un database SQL più robusto come PostgreSQL
-   - Implementa un ORM come SQLAlchemy
+**Possibili cause e soluzioni**:
+- **Formato dei dati errato**: Assicurati che le richieste POST e PUT utilizzino il corretto formato JSON
+- **Validazione fallita**: Controlla i messaggi di errore, che includono informazioni sui problemi di validazione
 
-### 7. Autenticazione
-   - Aggiungi un sistema di login
-   - Implementa diversi ruoli (utente, admin)
-   - Limita alcune operazioni solo agli utenti autenticati
+### 🐛 Problema: Errori di importazione dei moduli
 
-### 8. Miglioramenti di accessibilità
-   - Assicurati che l'applicazione sia accessibile seguendo le linee guida WCAG
-   - Migliora l'uso delle etichette ARIA e della struttura semantica HTML
-   - Implementa la navigazione da tastiera e il supporto per screen reader
+**Possibili cause e soluzioni**:
+- **Struttura del progetto errata**: Assicurati che la struttura delle cartelle sia esattamente come quella descritta
+- **Path di Python**: Esegui l'applicazione dalla directory principale per evitare problemi di path
 
-Buon divertimento con la programmazione web!
+### 🐛 Problema: Il database non viene creato
+
+**Possibili cause e soluzioni**:
+- **Permessi di file**: Assicurati di avere i permessi di scrittura nella directory app/data/
+- **Percorso del file**: Verifica che il percorso del file database sia corretto nel file db.py
+
+### 🐛 Problema: Il frontend non visualizza i dati
+
+**Possibili cause e soluzioni**:
+- **CORS**: Se sviluppi frontend e backend separatamente, potresti incontrare problemi di CORS
+- **JavaScript**: Controlla la console del browser per eventuali errori JavaScript
+- **Endpoint errati**: Verifica che gli URL delle API nel codice JavaScript corrispondano a quelli definiti nel backend
 
 ---
 
